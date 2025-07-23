@@ -7,7 +7,7 @@ if __name__ == "__main__":
     preprocessor = DataPreprocessor()
 
     # Define the file path to your dataset
-    file_path = 'flights_with_counts.csv'
+    file_path = '../Datasets/flights_with_counts.csv'
 
     # Preprocess the data
     X_train, X_test, y_train, y_test = preprocessor.preprocess_data(file_path)

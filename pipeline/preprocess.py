@@ -111,5 +111,5 @@ class DataPreprocessor:
 if __name__ == "__main__":
     # Example usage
     preprocessor = DataPreprocessor()
-    X_train, X_test, y_train, y_test = preprocessor.preprocess_data('flights_with_counts.csv')
+    X_train, X_test, y_train, y_test = preprocessor.preprocess_data('Datasets/flights_with_counts.csv')
     print("Preprocessing complete. Ready for model training.")

@@ -1,0 +1,5 @@
+*.docx
+Datasets/
+.idea
+pipeline/__pycache__/
+models/
