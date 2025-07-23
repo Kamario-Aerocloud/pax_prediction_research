@@ -1,6 +1,7 @@
 import pandas as pd
+import numpy as np
 import warnings
-from sklearn.preprocessing import LabelEncoder, StandardScaler
+from sklearn.preprocessing import LabelEncoder
 
 warnings.filterwarnings('ignore')
 
@@ -9,17 +10,17 @@ class DataPreprocessor:
         """Initialize the preprocessor with necessary components"""
 
         self.feature_names = [
-            'Destination Airport_encoded', 
-            'Airline_encoded', 'Hour', 'Day_of_Week', 'Month', 
-            'Day_of_Month', 'Time_Category_encoded'
+            'Destination Airport_encoded', 'Airline_encoded', 'Day_of_Week', 'Month','Day_of_Month', 'day_sin',
+            'day_cos', 'month_sin', 'month_cos', 'dow_sin', 'dow_cos', 'route_mean', 'route_median', 'route_std'
+            #'Time_Category_encoded', 'Hour_sin', 'Hour_cos'
         ]
-        self.target_name = 'PassengerCount'
+        self.target_name = 'Boarded'
         
     def load_data(self, file_path: str) -> pd.DataFrame:
         """Load data from CSV file"""
         try:
             df = pd.read_csv(file_path)
-            df['Flight Time'] = pd.to_datetime(df['Flight Time'], errors='coerce')
+            df['Date'] = pd.to_datetime(df['Date'], errors='coerce')
             print(f"Data loaded successfully. Shape: {df.shape}")
             return df
         except Exception as e:
@@ -38,10 +39,10 @@ class DataPreprocessor:
         print("Encoding categorical features...")
         
         # Extract time-based features
-        df['Hour'] = df['Flight Time'].dt.hour
-        df['Day_of_Week'] = df['Flight Time'].dt.dayofweek  # 0=Monday, 6=Sunday
-        df['Month'] = df['Flight Time'].dt.month
-        df['Day_of_Month'] = df['Flight Time'].dt.day
+        df['Hour'] = df['Date'].dt.hour
+        df['Day_of_Week'] = df['Date'].dt.dayofweek  # 0=Monday, 6=Sunday
+        df['Month'] = df['Date'].dt.month
+        df['Day_of_Month'] = df['Date'].dt.day
 
         # Create time-based categories
         df['Time_Category'] = pd.cut(df['Hour'], 
@@ -50,7 +51,7 @@ class DataPreprocessor:
 
         # Encode categorical variables
         label_encoders = {}
-        categorical_columns = ['Source Airport', 'Destination Airport', 'Airline', 'Time_Category']
+        categorical_columns = ['Destination Airport', 'Airline', 'Time_Category']
 
         for col in categorical_columns:
             le = LabelEncoder()
@@ -61,16 +62,44 @@ class DataPreprocessor:
         print(f"Encoded {len(categorical_columns)} categorical features")
         return df
 
-    def split_features_target(self, df: pd.DataFrame) -> tuple[pd.DataFrame, pd.Series]:
-        """Split the DataFrame into features and target variable"""
-        print("Splitting features and target variable...")
-        
-        X = df[self.feature_names]
-        y = df[self.target_name]
-        
-        print(f"Features shape: {X.shape}, Target shape: {y.shape}")
-        return X, y
-    
+    def cyclical_encode_time_features(self, df: pd.DataFrame) -> pd.DataFrame:
+        """Cyclical encoding for time features"""
+        print("Cyclical encoding of time features...")
+
+        # Hour
+        df['Hour_sin'] = np.sin(2 * np.pi * df['Hour'] / 24)
+        df['Hour_cos'] = np.cos(2 * np.pi * df['Hour'] / 24)
+
+        # Day of Week
+        df['dow_sin'] = np.sin(2 * np.pi * df['Day_of_Week'] / 7)
+        df['dow_cos'] = np.cos(2 * np.pi * df['Day_of_Week'] / 7)
+
+        # Day of Month
+        df['day_sin'] = np.sin(2 * np.pi * df['Day_of_Month'] / 31)
+        df['day_cos'] = np.cos(2 * np.pi * df['Day_of_Month'] / 31)
+
+        # Month
+        df['month_sin'] = np.sin(2 * np.pi * df['Month'] / 12)
+        df['month_cos'] = np.cos(2 * np.pi * df['Month'] / 12)
+
+        print("Cyclical encoding completed.")
+        return df
+
+    def group_by_airline_and_destination(self, df: pd.DataFrame) -> pd.DataFrame:
+        """Group by airline and destination airport to aggregate passenger counts"""
+        print("Grouping by airline and destination airport...")
+
+        route_stats = df.groupby(['Airline', 'Destination Airport'])['Boarded'].agg([
+            ('route_mean', 'mean'),
+            ('route_median', 'median'),
+            ('route_std', 'std'),
+        ]).reset_index()
+
+        df = df.merge(route_stats, on=['Airline', 'Destination Airport'], how='left')
+
+        print(f"Grouped data shape: {df.shape}")
+
+        return df
     
     def preprocess_data(self, file_path: str,
                          test_size: float = 0.2) -> tuple[pd.DataFrame, pd.DataFrame, pd.Series, pd.Series]:
@@ -85,10 +114,13 @@ class DataPreprocessor:
         
         # Encode categorical features
         df = self.encode_categorical_features(df)
-        
-        # Split features and target
-        X, y = self.split_features_target(df)
-        
+
+        # Cyclical encode time features
+        df = self.cyclical_encode_time_features(df)
+
+        # group by airline and destination airport
+        df = self.group_by_airline_and_destination(df)
+
         # Split into train and test sets
         split_factor = 0.8
         split_index = int(len(df) * split_factor)
