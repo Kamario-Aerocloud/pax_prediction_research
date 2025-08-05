@@ -3,3 +3,5 @@ Datasets/
 .idea
 pipeline/__pycache__/
 models/
+pipeline/plots/*
+pipeline/models/*
