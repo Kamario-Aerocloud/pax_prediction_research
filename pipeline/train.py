@@ -20,13 +20,14 @@ class RandomForestTrainer:
     def create_model(self, **kwargs) -> RandomForestRegressor:
         """Create Random Forest model with specified parameters"""
         default_params = {
-            'n_estimators': 300,
-            'max_depth': 10,
-            'min_samples_leaf': 1,
-            'max_features': None,
+            'n_estimators': 500,
+            'max_depth': 40,
+            'min_samples_leaf': 6,
+            'max_features': 'sqrt',
             'random_state': None,
-            'min_samples_split': 5,
+            'min_samples_split': 10,
             'bootstrap': True,
+            'criterion': 'poisson',
             'n_jobs': -1
         }
 
