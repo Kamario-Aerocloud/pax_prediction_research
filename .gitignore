@@ -1,7 +1,10 @@
 *.docx
 Datasets/
 .idea
-pipeline/__pycache__/
+pipeline/__pycache__/*
 models/
 pipeline/plots/*
 pipeline/models/*
+.ipynb_checkpoints/*
+*.pyc
+*.pyo
