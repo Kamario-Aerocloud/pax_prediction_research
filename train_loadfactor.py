@@ -12,8 +12,8 @@ from tensorflow.keras.callbacks import LearningRateScheduler
 
 # load the data
 # df = pd.read_csv(r"C:\git\pax_prediction_research\Datasets\augmented_SRQ_data_v3.csv")
-# df = pd.read_csv(r"C:\git\pax_prediction_research\Datasets\SRQ_flights.csv")
-df = pd.read_csv(r"C:\git\pax_prediction_research\Datasets\SRQ_flights_small.csv")
+df = pd.read_csv(r"C:\git\pax_prediction_research\Datasets\SRQ_flights.csv")
+# df = pd.read_csv(r"C:\git\pax_prediction_research\Datasets\SRQ_flights_small.csv")
 df = df.drop(columns='Unnamed: 0')
 
 # Convert to datetime
@@ -46,9 +46,23 @@ feature_columns = ['Destination Airport_encoded', 'Airline_encoded', # encoded d
 X = df[feature_columns]
 y = df[['Boarded', 'max_seats']]  # or whatever your target column is
 
-# get rid of any NaNs or infs in the data
+# Find columns with NaN values
+nan_indices = df[X.isna().any(axis=1)].index.tolist()
+print("Row indices with NaNs:", nan_indices)
+X = X.drop(index=nan_indices).reset_index(drop=True)
+y = y.drop(index=nan_indices).reset_index(drop=True)
 
 
+# get the load factor by dividing boarded by max_seats
+y['LoadFactor'] = y['Boarded'] / y['max_seats']
+s = pd.to_numeric(y['LoadFactor'], errors='coerce')
+nan_indices = y[y['LoadFactor'].isna()].index.tolist()
+inf_indices = y[np.isinf(s)].index.tolist()
+print("Rows with NaNs in LoadFactor:", nan_indices)
+y = y.drop(index=nan_indices).reset_index(drop=True)
+y = y.drop(index=inf_indices).reset_index(drop=True)
+X = X.drop(index=inf_indices).reset_index(drop=True)
+X = X.drop(index=nan_indices).reset_index(drop=True)
 
 split_ratio = 0.8  # 80% for training, 20% for testing
 split_index = int(len(df) * split_ratio)
