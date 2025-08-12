@@ -1,14 +1,10 @@
-import tensorflow as tf
+import datetime
 
-print(tf.__version__)
-
-import pandas as pd
 import numpy as np
-
-import matplotlib.pyplot as plt
-
+import pandas as pd
+import tensorflow as tf
 from sklearn.preprocessing import StandardScaler
-from tensorflow.keras.callbacks import LearningRateScheduler
+from tensorflow.keras.callbacks import LearningRateScheduler, TensorBoard
 
 # load the data
 # df = pd.read_csv(r"C:\git\pax_prediction_research\Datasets\augmented_SRQ_data_v3.csv")
@@ -24,9 +20,9 @@ df['hour'] = df['actual_date'].dt.hour
 df['minute'] = df['actual_date'].dt.minute
 df['second'] = df['actual_date'].dt.second
 df['seconds_in_day'] = (
-    df['actual_date'].dt.hour * 3600 +
-    df['actual_date'].dt.minute * 60 +
-    df['actual_date'].dt.second
+        df['actual_date'].dt.hour * 3600 +
+        df['actual_date'].dt.minute * 60 +
+        df['actual_date'].dt.second
 )
 # Normalize to [0, 2π]
 seconds_in_day_total = 24 * 60 * 60  # 86400
@@ -36,8 +32,8 @@ df['time_angle'] = 2 * np.pi * df['seconds_in_day'] / seconds_in_day_total
 df['time_sin'] = np.sin(df['time_angle'])
 df['time_cos'] = np.cos(df['time_angle'])
 
-feature_columns = ['Destination Airport_encoded', 'Airline_encoded', # encoded data
-                   'time_sin', 'time_cos', # cyclic time features
+feature_columns = ['Destination Airport_encoded', 'Airline_encoded',  # encoded data
+                   'time_sin', 'time_cos',  # cyclic time features
                    'day_sin', 'day_cos', 'month_sin', 'month_cos', 'dow_sin', 'dow_cos',  # cyclic date features
                    'route_mean', 'route_median', 'route_std',
                    'max_seats']
@@ -51,7 +47,6 @@ nan_indices = df[X.isna().any(axis=1)].index.tolist()
 print("Row indices with NaNs:", nan_indices)
 X = X.drop(index=nan_indices).reset_index(drop=True)
 y = y.drop(index=nan_indices).reset_index(drop=True)
-
 
 # get the load factor by dividing boarded by max_seats
 y['LoadFactor'] = y['Boarded'] / y['max_seats']
@@ -94,6 +89,7 @@ split_index = len(y_train)
 df_timestamps = df['Date']
 passenger_counts = df['Boarded']
 
+
 # Define scheduler function
 def scheduler(epoch, lr):
     if epoch % 10 != 0:
@@ -103,6 +99,10 @@ def scheduler(epoch, lr):
 
 
 lr_callback = LearningRateScheduler(scheduler)
+
+# TensorBoard log directory with timestamp to avoid overwriting
+log_dir = "logs/fit/" + datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
+tensorboard_callback = TensorBoard(log_dir=log_dir, histogram_freq=1)
 
 model = tf.keras.models.Sequential([
     tf.keras.layers.Dense(1024, activation='relu', input_shape=(14,)),
@@ -131,9 +131,7 @@ history = model.fit(X_train_final, y_train_final,
                     batch_size=128,
                     validation_data=(X_val, y_val),  # or use x_test/y_test for validation if you prefer
                     verbose=1,
-                    callbacks=[lr_callback])
-
-# output = model.evaluate(X_test_scaled, y_test, verbose=1)
+                    callbacks=[lr_callback, tensorboard_callback])
 
 # Generate predictions
 y_pred = model.predict(X_test_scaled)
