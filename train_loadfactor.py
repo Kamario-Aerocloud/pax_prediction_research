@@ -6,7 +6,9 @@ import pandas as pd
 import tensorflow as tf
 from matplotlib import pyplot as plt
 from sklearn.preprocessing import StandardScaler
-from tensorflow.keras.callbacks import LearningRateScheduler, TensorBoard
+from tensorflow.keras.callbacks import LearningRateScheduler, TensorBoard, ModelCheckpoint
+
+from pax_nn_model import pax_model
 
 # load the data
 # df = pd.read_csv(r"C:\git\pax_prediction_research\Datasets\augmented_SRQ_data_v3.csv")
@@ -105,26 +107,30 @@ lr_callback = LearningRateScheduler(scheduler)
 log_dir = "logs/fit/" + datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
 tensorboard_callback = TensorBoard(log_dir=log_dir, histogram_freq=1)
 
-model = tf.keras.models.Sequential([
-    tf.keras.layers.Dense(1024, activation='relu', input_shape=(14,)),
-    tf.keras.layers.Dense(128, activation='relu'),
-    tf.keras.layers.Dense(64, activation='relu'),
-    tf.keras.layers.Dense(1, activation='linear'),
-])
+# Define the model
+model = pax_model()
 
-# use a standard model with multiple inputs
-model.compile(optimizer='adam',
-              loss='mse',
-              metrics=['mae', 'mse']
-              )
+model.compile(optimizer=tf.keras.optimizers.Adam(learning_rate=1e-3),
+              loss='mse', metrics=['mae', 'mse'])
+
+checkpoint = ModelCheckpoint(
+    'best_model.h5',  # file to save the model
+    monitor='val_loss',  # quantity to monitor
+    save_best_only=True,  # save only the best model
+    mode='min',  # minimize validation loss
+    verbose=1
+)
 
 # train the model
 history = model.fit(X_train_scaled, y_train,
-                    epochs=100,
+                    epochs=50,
                     batch_size=64,
                     validation_data=(X_test_scaled, y_test),  # or use x_test/y_test for validation if you prefer
                     verbose=1,
-                    callbacks=[lr_callback, tensorboard_callback])
+                    callbacks=[checkpoint, lr_callback, tensorboard_callback])
+
+# load the best model
+model = tf.keras.models.load_model('best_model.h5')
 
 # Generate predictions
 y_pred = model.predict(X_test_scaled)
@@ -132,13 +138,12 @@ y_pred = model.predict(X_test_scaled)
 # multiply by the load factor to get the actual passenger count
 y_pred = (np.squeeze(y_pred) * y_dataset_full['max_seats'].iloc[split_index:].values).astype(int)  # Get predicted seats
 y_test = np.array(y_dataset_full['Boarded'].iloc[split_index:].values)  # Get actual seats
-# make sure y_test is less than y_dataset_full['max_seats'].iloc[split_index:].values
 y_test = np.clip(y_test, 0, y_dataset_full['max_seats'].iloc[split_index:].values)
 
 # Plot the outputs of the NN
 plt.figure()
-plt.plot(y_test, label='Actual Load Factor', marker='o', alpha=0.7, markersize=4)
-plt.plot(y_pred, label='Predicted Load Factor', marker='x', alpha=0.7, markersize=4)
+plt.plot(y_test, label='Actual Passengers', marker='o', alpha=0.7, markersize=4)
+plt.plot(y_pred, label='Predicted Passengers', marker='x', alpha=0.7, markersize=4)
 plt.title('Load Factor Predictions vs Actual')
 plt.xlabel('Sample Index')
 plt.ylabel('Load Factor')
