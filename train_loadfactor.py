@@ -86,9 +86,6 @@ scaler = StandardScaler()
 X_train_scaled = scaler.fit_transform(X_train)
 X_test_scaled = scaler.transform(X_test)
 
-# Get the split index (number of training samples)
-split_index = len(y_train)
-
 # Extract date and passenger count
 df_timestamps = df['Date']
 passenger_counts = df['Boarded']
@@ -123,8 +120,8 @@ model.compile(optimizer='adam',
 
 # train the model
 history = model.fit(X_train_scaled, y_train,
-                    epochs=1,
-                    batch_size=128,
+                    epochs=100,
+                    batch_size=64,
                     validation_data=(X_test_scaled, y_test),  # or use x_test/y_test for validation if you prefer
                     verbose=1,
                     callbacks=[lr_callback, tensorboard_callback])
@@ -135,6 +132,8 @@ y_pred = model.predict(X_test_scaled)
 # multiply by the load factor to get the actual passenger count
 y_pred = (np.squeeze(y_pred) * y_dataset_full['max_seats'].iloc[split_index:].values).astype(int)  # Get predicted seats
 y_test = np.array(y_dataset_full['Boarded'].iloc[split_index:].values)  # Get actual seats
+# make sure y_test is less than y_dataset_full['max_seats'].iloc[split_index:].values
+y_test = np.clip(y_test, 0, y_dataset_full['max_seats'].iloc[split_index:].values)
 
 # Plot the outputs of the NN
 plt.figure()
