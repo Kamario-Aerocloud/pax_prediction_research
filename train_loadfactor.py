@@ -66,6 +66,7 @@ X = X.drop(index=nan_indices).reset_index(drop=True)
 
 # ensure load factor is between 0-1
 y['LoadFactor'] = y['LoadFactor'].clip(lower=0.0, upper=1.0)
+y = y['LoadFactor']  # use only the LoadFactor column as target
 
 split_ratio = 0.8  # 80% for training, 20% for testing
 split_index = int(len(df) * split_ratio)
@@ -103,21 +104,14 @@ def scheduler(epoch, lr):
 
 lr_callback = LearningRateScheduler(scheduler)
 
-# model definition
-input_encoded = tf.keras.Input(shape=(2,))  # 11 features as per feature_columns
-input_time = tf.keras.Input(shape=(6,))  # 11 features as per feature_columns
-input_route = tf.keras.Input(shape=(3,))  # 11 features as per feature_columns
-
-# model = tf.keras.models.Sequential([
-#     tf.keras.layers.Dense(1024, activation='relu', input_shape=(11,)),
-#     tf.keras.layers.Dense(128, activation='relu'),
-#     tf.keras.layers.Dense(64, activation='relu'),
-#     tf.keras.layers.Dense(1, activation='linear'),
-# ])
+model = tf.keras.models.Sequential([
+    tf.keras.layers.Dense(1024, activation='relu', input_shape=(14,)),
+    tf.keras.layers.Dense(128, activation='relu'),
+    tf.keras.layers.Dense(64, activation='relu'),
+    tf.keras.layers.Dense(1, activation='linear'),
+])
 
 # use a standard model with multiple inputs
-
-
 model.compile(optimizer='adam',
               loss='mse',
               metrics=['mae', 'mse']
