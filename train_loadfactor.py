@@ -121,19 +121,11 @@ model.compile(optimizer='adam',
               metrics=['mae', 'mse']
               )
 
-# Take last 20% of training data as validation set
-val_split_index = int(len(X_train) * 0.8)
-
-X_train_final = X_train_scaled[:val_split_index]
-X_val = X_train_scaled[val_split_index:]
-y_train_final = y_train.iloc[:val_split_index]
-y_val = y_train.iloc[val_split_index:]
-
 # train the model
-history = model.fit(X_train_final, y_train_final,
+history = model.fit(X_train_scaled, y_train,
                     epochs=1,
                     batch_size=128,
-                    validation_data=(X_val, y_val),  # or use x_test/y_test for validation if you prefer
+                    validation_data=(X_test_scaled, y_test),  # or use x_test/y_test for validation if you prefer
                     verbose=1,
                     callbacks=[lr_callback, tensorboard_callback])
 
