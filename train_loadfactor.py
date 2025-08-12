@@ -64,6 +64,9 @@ y = y.drop(index=inf_indices).reset_index(drop=True)
 X = X.drop(index=inf_indices).reset_index(drop=True)
 X = X.drop(index=nan_indices).reset_index(drop=True)
 
+# ensure load factor is between 0-1
+y['LoadFactor'] = y['LoadFactor'].clip(lower=0.0, upper=1.0)
+
 split_ratio = 0.8  # 80% for training, 20% for testing
 split_index = int(len(df) * split_ratio)
 
@@ -77,10 +80,6 @@ print(f"Training set size: {X_train.shape[0]}")
 print(f"Testing set size: {X_test.shape[0]}")
 print(f"Training target range: {y_train.min()} to {y_train.max()}")
 print(f"Testing target range: {y_test.min()} to {y_test.max()}")
-
-# Remove and Nans and infs from the data
-
-
 
 # Scale features
 scaler = StandardScaler()
