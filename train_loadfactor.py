@@ -127,16 +127,18 @@ y_val = y_train.iloc[val_split_index:]
 
 # train the model
 history = model.fit(X_train_final, y_train_final,
-                    epochs=200,
+                    epochs=50,
                     batch_size=128,
                     validation_data=(X_val, y_val),  # or use x_test/y_test for validation if you prefer
                     verbose=1,
                     callbacks=[lr_callback])
 
-# output = model.evaluate(X_test_scaled, y_test_log, verbose=1)
-#
-# # Generate predictions
-# y_pred_log = model.predict(X_test_scaled)
+# output = model.evaluate(X_test_scaled, y_test, verbose=1)
+
+# Generate predictions
+y_pred = model.predict(X_test_scaled)
+print(y_pred)
+
 # y_pred = y_pred_log.flatten()
 # y_true = y_test_log.values
 #
