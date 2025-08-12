@@ -1,8 +1,10 @@
+import copy
 import datetime
 
 import numpy as np
 import pandas as pd
 import tensorflow as tf
+from matplotlib import pyplot as plt
 from sklearn.preprocessing import StandardScaler
 from tensorflow.keras.callbacks import LearningRateScheduler, TensorBoard
 
@@ -61,6 +63,8 @@ X = X.drop(index=nan_indices).reset_index(drop=True)
 
 # ensure load factor is between 0-1
 y['LoadFactor'] = y['LoadFactor'].clip(lower=0.0, upper=1.0)
+y_dataset_full = copy.deepcopy(y)
+
 y = y['LoadFactor']  # use only the LoadFactor column as target
 
 split_ratio = 0.8  # 80% for training, 20% for testing
@@ -127,7 +131,7 @@ y_val = y_train.iloc[val_split_index:]
 
 # train the model
 history = model.fit(X_train_final, y_train_final,
-                    epochs=50,
+                    epochs=1,
                     batch_size=128,
                     validation_data=(X_val, y_val),  # or use x_test/y_test for validation if you prefer
                     verbose=1,
@@ -135,26 +139,17 @@ history = model.fit(X_train_final, y_train_final,
 
 # Generate predictions
 y_pred = model.predict(X_test_scaled)
-print(y_pred)
 
-# y_pred = y_pred_log.flatten()
-# y_true = y_test_log.values
-#
-# # Plot predictions vs actual - now dates align correctly
-# plt.figure(figsize=(15, 8))
-#
-# # Plot first 100 test samples
-# n_samples = min(100, len(y_test))
-# dates_plot = dates_test.iloc[:n_samples]
-# y_true_plot = y_true[:n_samples]
-# y_pred_plot = y_pred[:n_samples]
-#
-# plt.subplot(2, 1, 1)
-# plt.plot(dates_plot, y_true_plot, label='True', marker='o', alpha=0.7, markersize=4)
-# plt.plot(dates_plot, y_pred_plot, label='Predicted', marker='x', alpha=0.7, markersize=4)
-# plt.title('First 100 Test Samples - Chronological Order')
-# plt.xlabel('Date')
-# plt.ylabel('Passenger Count')
-# plt.legend()
-# plt.grid(True, alpha=0.3)
-# plt.xticks(rotation=45)
+# multiply by the load factor to get the actual passenger count
+y_pred = (np.squeeze(y_pred) * y_dataset_full['max_seats'].iloc[split_index:].values).astype(int)  # Get predicted seats
+y_test = np.array(y_dataset_full['Boarded'].iloc[split_index:].values)  # Get actual seats
+
+# Plot the outputs of the NN
+plt.figure()
+plt.plot(y_test, label='Actual Load Factor', marker='o', alpha=0.7, markersize=4)
+plt.plot(y_pred, label='Predicted Load Factor', marker='x', alpha=0.7, markersize=4)
+plt.title('Load Factor Predictions vs Actual')
+plt.xlabel('Sample Index')
+plt.ylabel('Load Factor')
+plt.legend()
+plt.show()

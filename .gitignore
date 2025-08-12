@@ -8,3 +8,4 @@ pipeline/models/*
 .ipynb_checkpoints/*
 *.pyc
 *.pyo
+logs
