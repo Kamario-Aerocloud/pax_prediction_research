@@ -88,10 +88,6 @@ scaler = StandardScaler()
 X_train_scaled = scaler.fit_transform(X_train)
 X_test_scaled = scaler.transform(X_test)
 
-# Extract date and passenger count
-df_timestamps = df['Date']
-passenger_counts = df['Boarded']
-
 
 # Define scheduler function
 def scheduler(epoch, lr):
@@ -111,7 +107,7 @@ tensorboard_callback = TensorBoard(log_dir=log_dir, histogram_freq=1)
 model = pax_model()
 
 model.compile(optimizer=tf.keras.optimizers.Adam(learning_rate=1e-3),
-              loss='mse', metrics=['mae', 'mse'])
+              loss='mae', metrics=['mae', 'mse'])
 
 checkpoint = ModelCheckpoint(
     'best_model.h5',  # file to save the model
@@ -124,7 +120,7 @@ checkpoint = ModelCheckpoint(
 # train the model
 history = model.fit(X_train_scaled, y_train,
                     epochs=50,
-                    batch_size=64,
+                    batch_size=32,
                     validation_data=(X_test_scaled, y_test),  # or use x_test/y_test for validation if you prefer
                     verbose=1,
                     callbacks=[checkpoint, lr_callback, tensorboard_callback])
