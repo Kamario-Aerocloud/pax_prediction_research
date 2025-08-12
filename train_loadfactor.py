@@ -68,19 +68,19 @@ split_index = len(y_train)
 df_timestamps = df['Date']
 passenger_counts = df['Boarded']
 
-# Plot
-plt.figure(figsize=(20, 8))
-
-plt.plot(df_timestamps[:split_index], passenger_counts[:split_index], label='Train', color='blue')
-plt.plot(df_timestamps[split_index:], passenger_counts[split_index:], label='Test', color='orange')
-
-plt.title('Passenger Count Over Time (Train/Test Split)', fontsize=16)
-plt.xlabel('Flight Date', fontsize=14)
-plt.ylabel('Passenger Count', fontsize=14)
-plt.legend()
-plt.grid(True)
-plt.tight_layout()
-plt.show()
+# # Plot
+# plt.figure(figsize=(20, 8))
+#
+# plt.plot(df_timestamps[:split_index], passenger_counts[:split_index], label='Train', color='blue')
+# plt.plot(df_timestamps[split_index:], passenger_counts[split_index:], label='Test', color='orange')
+#
+# plt.title('Passenger Count Over Time (Train/Test Split)', fontsize=16)
+# plt.xlabel('Flight Date', fontsize=14)
+# plt.ylabel('Passenger Count', fontsize=14)
+# plt.legend()
+# plt.grid(True)
+# plt.tight_layout()
+# plt.show()
 
 from tensorflow.keras.callbacks import LearningRateScheduler
 
