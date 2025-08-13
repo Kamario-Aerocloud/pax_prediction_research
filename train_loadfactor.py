@@ -119,7 +119,7 @@ checkpoint = ModelCheckpoint(
 
 # train the model
 history = model.fit(X_train_scaled, y_train,
-                    epochs=50,
+                    epochs=25,
                     batch_size=32,
                     validation_data=(X_test_scaled, y_test),  # or use x_test/y_test for validation if you prefer
                     verbose=1,
@@ -140,8 +140,8 @@ y_test = np.clip(y_test, 0, y_dataset_full['max_seats'].iloc[split_index:].value
 plt.figure()
 plt.plot(y_test, label='Actual Passengers', marker='o', alpha=0.7, markersize=4)
 plt.plot(y_pred, label='Predicted Passengers', marker='x', alpha=0.7, markersize=4)
-plt.title('Load Factor Predictions vs Actual')
+plt.title('Passenger Predictions vs Actual')
 plt.xlabel('Sample Index')
-plt.ylabel('Load Factor')
+plt.ylabel('PAX Prediction')
 plt.legend()
 plt.show()
