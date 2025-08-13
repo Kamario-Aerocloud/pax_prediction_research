@@ -107,7 +107,7 @@ tensorboard_callback = TensorBoard(log_dir=log_dir, histogram_freq=1)
 model = pax_model()
 
 model.compile(optimizer=tf.keras.optimizers.Adam(learning_rate=1e-3),
-              loss='mae', metrics=['mae', 'mse'])
+              loss='mae', metrics=['mae'])
 
 checkpoint = ModelCheckpoint(
     'best_model.h5',  # file to save the model
@@ -130,18 +130,34 @@ model = tf.keras.models.load_model('best_model.h5')
 
 # Generate predictions
 y_pred = model.predict(X_test_scaled)
+y_pred = np.clip(y_pred, 0, 1) # Ensure predictions are between 0 and 1
 
-# multiply by the load factor to get the actual passenger count
-y_pred = (np.squeeze(y_pred) * y_dataset_full['max_seats'].iloc[split_index:].values).astype(int)  # Get predicted seats
-y_test = np.array(y_dataset_full['Boarded'].iloc[split_index:].values)  # Get actual seats
-y_test = np.clip(y_test, 0, y_dataset_full['max_seats'].iloc[split_index:].values)
+# multiply the load factor by max seats to get the actual passenger count
+y_pred_pax = (np.squeeze(y_pred) * y_dataset_full['max_seats'].iloc[split_index:].values).astype(
+    int)  # Get predicted seats
+y_test_pax = np.array(y_dataset_full['Boarded'].iloc[split_index:].values)  # Get actual seats
+y_test_pax = np.clip(y_test_pax, 0, y_dataset_full['max_seats'].iloc[split_index:].values)
 
-# Plot the outputs of the NN
-plt.figure()
-plt.plot(y_test, label='Actual Passengers', marker='o', alpha=0.7, markersize=4)
-plt.plot(y_pred, label='Predicted Passengers', marker='x', alpha=0.7, markersize=4)
+# Plot the outputs of the NN with actual passenger counts
+plt.figure(1)
+plt.plot(y_test_pax, label='Actual Passengers', marker='o', alpha=0.7, markersize=4)
+plt.plot(y_pred_pax, label='Predicted Passengers', marker='x', alpha=0.7, markersize=4)
 plt.title('Passenger Predictions vs Actual')
 plt.xlabel('Sample Index')
 plt.ylabel('PAX Prediction')
+plt.legend()
+
+# multiply by the load factor to get the actual passenger count
+y_pred_lf = np.squeeze(y_pred)  # Get predicted lf
+y_test_lf = np.array(y_dataset_full['LoadFactor'].iloc[split_index:].values)  # Get actual lf
+y_test_lf = np.clip(y_test_lf, 0, 1)
+
+# Plot the outputs of the NN with LF
+plt.figure(2)
+plt.plot(y_test_lf, label='Actual Load Factor', marker='o', alpha=0.7, markersize=4)
+plt.plot(y_pred_lf, label='Predicted Load Factor', marker='x', alpha=0.7, markersize=4)
+plt.title('Load Factor Predictions vs Actual')
+plt.xlabel('Sample Index')
+plt.ylabel('Load Factor')
 plt.legend()
 plt.show()
