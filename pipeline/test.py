@@ -69,13 +69,13 @@ class ModelTester:
 
         return self.test_metrics
 
-    def plot_predictions(self, y_test: pd.Series, y_pred: np.ndarray,
+    def plot_predictions(self, y_test: pd.Series,
                          figsize: Tuple[int, int] = (12, 10)):
         """Plot various prediction analysis charts"""
         fig, axes = plt.subplots(2, 2, figsize=figsize)
 
         # 1. Actual vs Predicted scatter plot
-        axes[0, 0].scatter(y_test, y_pred, alpha=0.6)
+        axes[0, 0].scatter(y_test, self.predictions, alpha=0.6)
         axes[0, 0].plot([y_test.min(), y_test.max()], [y_test.min(), y_test.max()], 'r--', lw=2)
         axes[0, 0].set_xlabel('Actual Values')
         axes[0, 0].set_ylabel('Predicted Values')
@@ -83,8 +83,8 @@ class ModelTester:
         axes[0, 0].grid(True, alpha=0.3)
 
         # 2. Residuals plot
-        residuals = y_test - y_pred
-        axes[0, 1].scatter(y_pred, residuals, alpha=0.6)
+        residuals = y_test - self.predictions
+        axes[0, 1].scatter(self.predictions, residuals, alpha=0.6)
         axes[0, 1].axhline(y=0, color='r', linestyle='--')
         axes[0, 1].set_xlabel('Predicted Values')
         axes[0, 1].set_ylabel('Residuals')
@@ -111,9 +111,9 @@ class ModelTester:
         plt.savefig('plots/prediction_analysis.png', dpi=300, bbox_inches='tight')
         plt.show()
 
-    def plot_error_distribution(self, y_test: pd.Series, y_pred: np.ndarray):
+    def plot_error_distribution(self, y_test: pd.Series):
         """Plot error distribution analysis"""
-        errors = np.abs(y_test - y_pred)
+        errors = np.abs(y_test - self.predictions)
         percentage_errors = (errors / np.abs(y_test)) * 100
 
         fig, axes = plt.subplots(1, 2, figsize=(15, 5))
@@ -233,6 +233,25 @@ class ModelTester:
 
         return comparison_df
 
+    def line_plot (self, y_test: pd.Series) -> None:
+        """Plot actual vs predicted values"""
+        if self.predictions is None:
+            raise ValueError("Predictions not available. Call predict() first.")
+
+        plt.figure(figsize=(12, 6))
+        plt.plot(y_test.values[:100], label='Actual', color='blue', marker='o', markersize=4, alpha=0.7)
+        plt.plot(self.predictions[:100], label='Predicted', color='red', marker='x', markersize=4, alpha=0.7)
+        plt.xlabel('Sample Index')
+        plt.ylabel('Target Value')
+        plt.title('Actual vs Predicted Values')
+        plt.legend()
+        plt.grid(True, alpha=0.3)
+
+        # Save plot
+        os.makedirs('plots', exist_ok=True)
+        plt.savefig('plots/line_plot.png', dpi=300, bbox_inches='tight')
+        plt.show()
+
     def test_model(self, X_test: pd.DataFrame, y_test: pd.Series) -> Dict[str, float]:
         """Run the complete testing pipeline"""
         print("Starting model testing...")
@@ -241,9 +260,10 @@ class ModelTester:
         test_metrics = self.evaluate_model(X_test, y_test)
 
         # Plot predictions and errors
-        self.plot_predictions(y_test, self.predictions)
-        self.plot_error_distribution(y_test, self.predictions)
+        self.plot_predictions(y_test)
+        self.plot_error_distribution(y_test)
         self.plot_prediction_intervals(X_test, y_test)
+        self.line_plot(y_test)
 
         # Compare with baselines
         comparison_df = self.compare_with_baseline(y_test, self.predictions)
