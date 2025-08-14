@@ -9,11 +9,11 @@ class DataPreprocessor:
     def __init__(self):
         """Initialize the preprocessor with necessary components"""
 
-        self.feature_names = [
-            'Destination Airport_encoded', 'Airline_encoded', 'Day_of_Week', 'Month','Day_of_Month', 'day_sin',
-            'day_cos', 'month_sin', 'month_cos', 'dow_sin', 'dow_cos', 'route_mean', 'route_median', 'route_std'
-            #'Time_Category_encoded', 'Hour_sin', 'Hour_cos'
-        ]
+        self.feature_names = ['Destination Airport_encoded', 'Airline_encoded', 'Time_Category_encoded', # encoded data
+                           'time_sin', 'time_cos',  # cyclic time features
+                           'day_sin', 'day_cos', 'month_sin', 'month_cos', 'dow_sin', 'dow_cos', 'time_sin', 'time_cos',  # cyclic date features
+                           'route_mean_x', 'route_median_x', 'route_std_x',
+                           'max_seats']
         self.target_name = 'Boarded'
         
     def load_data(self, file_path: str) -> pd.DataFrame:
@@ -21,6 +21,7 @@ class DataPreprocessor:
         try:
             df = pd.read_csv(file_path)
             df['Date'] = pd.to_datetime(df['Date'], errors='coerce')
+            df['actual_date'] = pd.to_datetime(df['actual_date'], errors='coerce')
             print(f"Data loaded successfully. Shape: {df.shape}")
             return df
         except Exception as e:
@@ -29,9 +30,10 @@ class DataPreprocessor:
     
     def handle_missing_values(self, df: pd.DataFrame) -> pd.DataFrame:
         """Handle missing values in the dataset"""
-        
-        #TODO: Implement more sophisticated missing value handling if needed
-        print(f"Missing values handled. Remaining nulls: {df.isnull().sum().sum()}")
+        df = df[self.feature_names + [self.target_name, 'actual_date', 'max_seats']].copy()
+        nan_indices = df[df.isna().any(axis=1)].index.tolist()
+        df = df.drop(index=nan_indices).reset_index(drop=True)
+
         return df
     
     def encode_categorical_features(self, df: pd.DataFrame) -> pd.DataFrame:
@@ -39,10 +41,12 @@ class DataPreprocessor:
         print("Encoding categorical features...")
         
         # Extract time-based features
-        df['Hour'] = df['Date'].dt.hour
-        df['Day_of_Week'] = df['Date'].dt.dayofweek  # 0=Monday, 6=Sunday
-        df['Month'] = df['Date'].dt.month
-        df['Day_of_Month'] = df['Date'].dt.day
+        df['Day_of_Week'] = df['actual_date'].dt.dayofweek  # 0=Monday, 6=Sunday
+        df['Month'] = df['actual_date'].dt.month
+        df['Day_of_Month'] = df['actual_date'].dt.day
+        df['Hour'] = df['actual_date'].dt.hour
+
+
 
         # Create time-based categories
         df['Time_Category'] = pd.cut(df['Hour'], 
@@ -82,6 +86,23 @@ class DataPreprocessor:
         df['month_sin'] = np.sin(2 * np.pi * df['Month'] / 12)
         df['month_cos'] = np.cos(2 * np.pi * df['Month'] / 12)
 
+        # Extract time components
+        df['hour'] = df['actual_date'].dt.hour
+        df['minute'] = df['actual_date'].dt.minute
+        df['second'] = df['actual_date'].dt.second
+        df['seconds_in_day'] = (
+                df['actual_date'].dt.hour * 3600 +
+                df['actual_date'].dt.minute * 60 +
+                df['actual_date'].dt.second
+        )
+        # Normalize to [0, 2π]
+        seconds_in_day_total = 24 * 60 * 60  # 86400
+        df['time_angle'] = 2 * np.pi * df['seconds_in_day'] / seconds_in_day_total
+
+        # Compute sin and cos
+        df['time_sin'] = np.sin(df['time_angle'])
+        df['time_cos'] = np.cos(df['time_angle'])
+
         print("Cyclical encoding completed.")
         return df
 
@@ -108,10 +129,7 @@ class DataPreprocessor:
         
         # Load data
         df = self.load_data(file_path)
-        
-        # Handle missing values
-        df = self.handle_missing_values(df)
-        
+
         # Encode categorical features
         df = self.encode_categorical_features(df)
 
@@ -120,6 +138,9 @@ class DataPreprocessor:
 
         # group by airline and destination airport
         df = self.group_by_airline_and_destination(df)
+
+        # Handle missing values
+        df = self.handle_missing_values(df)
 
         # Split into train and test sets
         split_factor = 0.8
