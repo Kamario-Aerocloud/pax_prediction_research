@@ -12,7 +12,7 @@ class DataPreprocessor:
         self.feature_names = ['Destination Airport_encoded', 'Airline_encoded', 'Time_Category_encoded', # encoded data
                            'time_sin', 'time_cos',  # cyclic time features
                            'day_sin', 'day_cos', 'month_sin', 'month_cos', 'dow_sin', 'dow_cos', 'time_sin', 'time_cos',  # cyclic date features
-                           'route_mean_x', 'route_median_x', 'route_std_x',
+                           'route_mean', 'route_median', 'route_std',
                            'max_seats']
         self.target_name = 'Boarded'
         
