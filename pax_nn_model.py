@@ -74,7 +74,7 @@ def pax_model() -> tf.keras.Model:
         kernel_regularizer=tf.keras.regularizers.l2(1e-4)
     )(x)
 
-    for _ in range(4):
+    for _ in range(8):
         x = residual_block(x, 48, dropout_rate=0.35)
 
     x = tf.keras.layers.Dense(

@@ -12,7 +12,7 @@ class DataPreprocessor:
         self.feature_names = ['Destination Airport_encoded', 'Airline_encoded', 'Time_Category_encoded', # encoded data
                            'time_sin', 'time_cos',  # cyclic time features
                            'day_sin', 'day_cos', 'month_sin', 'month_cos', 'dow_sin', 'dow_cos', 'time_sin', 'time_cos',  # cyclic date features
-                           'route_mean', 'route_median', 'route_std',
+                           'route_mean_x', 'route_median_x', 'route_std_x',
                            'max_seats']
         self.target_name = 'Boarded'
         
@@ -165,4 +165,5 @@ if __name__ == "__main__":
     # Example usage
     preprocessor = DataPreprocessor()
     X_train, X_test, y_train, y_test = preprocessor.preprocess_data('Datasets/flights_with_counts.csv')
+
     print("Preprocessing complete. Ready for model training.")

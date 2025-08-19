@@ -1,16 +1,23 @@
+import pandas as pd
+
 from preprocess import DataPreprocessor
 from train import RandomForestTrainer
 from test import ModelTester
+from train_loadfactor import get_data
 
 if __name__ == "__main__":
     # Example usage
     preprocessor = DataPreprocessor()
 
     # Define the file path to your dataset
-    file_path = '../Datasets/SRQ_flights.csv'
+    file_path = r"C:\Users\KamarioSinclair\projects\pax_prediction_research\Datasets\SRQ_flights.csv"
 
     # Preprocess the data
-    X_train, X_test, y_train, y_test = preprocessor.preprocess_data(file_path)
+    #X_train, X_test, y_train, y_test = preprocessor.preprocess_data(file_path)
+
+    # Get the data using the NN pre processing function
+    X_train, X_test, y_train, y_test, split_index, y_dataset_full = get_data(file_path)
+    X_train = pd.DataFrame(X_train)
 
     # Print shapes of the resulting datasets
     print(f"X_train shape: {X_train.shape}, y_train shape: {y_train.shape}")

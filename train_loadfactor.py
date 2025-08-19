@@ -23,10 +23,10 @@ warnings.filterwarnings('ignore')
 # np.random.seed(0)
 # tf.random.set_seed(0)
 
-def get_data():
+def get_data(file_path):
     # load the data
     # df = pd.read_csv(r"C:\git\pax_prediction_research\Datasets\augmented_SRQ_data_v3.csv")
-    df = pd.read_csv(r"Datasets\SRQ_flights.csv")
+    df = pd.read_csv(file_path) #use full path
     # df = pd.read_csv(r"C:\git\pax_prediction_research\Datasets\SRQ_flights_small.csv")
     df = df.drop(columns='Unnamed: 0')
 
@@ -112,6 +112,10 @@ def get_data():
     scaler = StandardScaler()
     X_train_scaled = scaler.fit_transform(X_train)
     X_test_scaled = scaler.transform(X_test)
+
+    #Convert back to df
+    X_train_scaled = pd.DataFrame(X_train_scaled, columns=X_train.columns)
+    X_test_scaled = pd.DataFrame(X_test_scaled, columns=X_test.columns)
 
     return X_train_scaled, X_test_scaled, y_train, y_test, split_index, y_dataset_full
 
@@ -211,7 +215,8 @@ def evaluate_model(model, X_test_scaled, y_dataset_full, split_index):
 
 if __name__ == "__main__":
     # get data
-    X_train, X_test, y_train, y_test, split_index, y_dataset_full = get_data()
+    file_path = r"C:\Users\KamarioSinclair\projects\pax_prediction_research\Datasets\SRQ_flights.csv"
+    X_train, X_test, y_train, y_test, split_index, y_dataset_full = get_data(file_path)
     # Train the model
     model = train_model(X_train, X_test, y_train, y_test)
 
