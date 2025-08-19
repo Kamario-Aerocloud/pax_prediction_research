@@ -1,18 +1,23 @@
 import copy
 import datetime
+import warnings
 
 import numpy as np
 import pandas as pd
 import tensorflow as tf
 from matplotlib import pyplot as plt
-from sklearn.preprocessing import StandardScaler
+from sklearn.preprocessing import StandardScaler, LabelEncoder
+from sklearn.metrics import r2_score, mean_squared_error, mean_absolute_error
+
 from tensorflow.keras.callbacks import LearningRateScheduler, TensorBoard, ModelCheckpoint
 
 from pax_nn_model import pax_model
 
+warnings.filterwarnings('ignore')
+
 # load the data
 # df = pd.read_csv(r"C:\git\pax_prediction_research\Datasets\augmented_SRQ_data_v3.csv")
-df = pd.read_csv(r"C:\git\pax_prediction_research\Datasets\SRQ_flights.csv")
+df = pd.read_csv(r"Datasets\SRQ_flights.csv")
 # df = pd.read_csv(r"C:\git\pax_prediction_research\Datasets\SRQ_flights_small.csv")
 df = df.drop(columns='Unnamed: 0')
 
@@ -36,7 +41,15 @@ df['time_angle'] = 2 * np.pi * df['seconds_in_day'] / seconds_in_day_total
 df['time_sin'] = np.sin(df['time_angle'])
 df['time_cos'] = np.cos(df['time_angle'])
 
-feature_columns = ['Destination Airport_encoded', 'Airline_encoded',  # encoded data
+df['Hour'] = df['actual_date'].dt.hour
+
+df['Time_Category'] = pd.cut(df['Hour'],
+                             bins=[0, 6, 12, 18, 24],
+                             labels=['Night', 'Morning', 'Afternoon', 'Evening'])
+
+df['Time_Category_encoded'] = LabelEncoder().fit_transform(df['Time_Category'])
+
+feature_columns = ['Destination Airport_encoded', 'Airline_encoded', 'Time_Category_encoded', # encoded data
                    'time_sin', 'time_cos',  # cyclic time features
                    'day_sin', 'day_cos', 'month_sin', 'month_cos', 'dow_sin', 'dow_cos',  # cyclic date features
                    'route_mean', 'route_median', 'route_std',
@@ -110,7 +123,7 @@ model.compile(optimizer=tf.keras.optimizers.Adam(learning_rate=1e-3),
               loss='mae', metrics=['mae'])
 
 checkpoint = ModelCheckpoint(
-    'best_model.h5',  # file to save the model
+    'best_model.keras',  # file to save the model
     monitor='val_loss',  # quantity to monitor
     save_best_only=True,  # save only the best model
     mode='min',  # minimize validation loss
@@ -119,14 +132,15 @@ checkpoint = ModelCheckpoint(
 
 # train the model
 history = model.fit(X_train_scaled, y_train,
-                    epochs=25,
+                    epochs=30,
                     batch_size=32,
                     validation_data=(X_test_scaled, y_test),  # or use x_test/y_test for validation if you prefer
                     verbose=1,
                     callbacks=[checkpoint, lr_callback, tensorboard_callback])
 
 # load the best model
-model = tf.keras.models.load_model('best_model.h5')
+model = tf.keras.models.load_model('best_model.keras')
+
 
 # Generate predictions
 y_pred = model.predict(X_test_scaled)
@@ -138,6 +152,12 @@ y_pred_pax = (np.squeeze(y_pred) * y_dataset_full['max_seats'].iloc[split_index:
 y_test_pax = np.array(y_dataset_full['Boarded'].iloc[split_index:].values)  # Get actual seats
 y_test_pax = np.clip(y_test_pax, 0, y_dataset_full['max_seats'].iloc[split_index:].values)
 
+
+r2 = r2_score(y_test_pax, y_pred_pax)
+mse = mean_squared_error(y_test_pax, y_pred_pax)
+mae = mean_absolute_error(y_test_pax, y_pred_pax)
+
+print(f"Training R^2: {r2:.4f}, MSE: {mse:.4f}, MAE: {mae:.4f}")
 # Plot the outputs of the NN with actual passenger counts
 plt.figure(1)
 plt.plot(y_test_pax, label='Actual Passengers', marker='o', alpha=0.7, markersize=4)
